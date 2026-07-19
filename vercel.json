@@ -1,6 +1,9 @@
 {
   "version": 2,
   "functions": {
+    "api/index.js": {
+      "maxDuration": 10
+    },
     "api/[...all].js": {
       "maxDuration": 10
     }
