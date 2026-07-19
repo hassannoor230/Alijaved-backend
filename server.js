@@ -17,7 +17,28 @@ const dbReady = connectDB().catch((err) => {
 
 const app = express();
 
-app.use(cors({ origin: process.env.CLIENT_ORIGIN || "http://localhost:5173" }));
+// Accept full URLs in CLIENT_ORIGIN. The normalization also prevents a common
+// Vercel configuration mistake: entering `my-site.vercel.app` without `https://`.
+const allowedOrigins = (process.env.CLIENT_ORIGIN || "http://localhost:5173")
+  .split(",")
+  .map((origin) => origin.trim().replace(/\/$/, ""))
+  .filter(Boolean)
+  .map((origin) => {
+    if (/^https?:\/\//i.test(origin)) return origin;
+    return origin.startsWith("localhost") || origin.startsWith("127.0.0.1")
+      ? `http://${origin}`
+      : `https://${origin}`;
+  });
+
+app.use(
+  cors({
+    origin(origin, callback) {
+      // Requests without an Origin header include server-to-server checks.
+      if (!origin || allowedOrigins.includes(origin)) return callback(null, true);
+      return callback(new Error("Origin is not allowed by CORS"));
+    },
+  })
+);
 app.use(express.json());
 
 app.get("/", (req, res) => res.json({ status: "ok", service: "portfolio-api" }));
