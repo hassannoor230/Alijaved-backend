@@ -10,10 +10,6 @@ import contactRoutes from "./routes/contact.js";
 import analyticsRoutes from "./routes/analytics.js";
 
 dotenv.config();
-let dbError;
-const dbReady = connectDB().catch((err) => {
-  dbError = err;
-});
 
 const app = express();
 
@@ -52,8 +48,9 @@ app.get("/favicon.png", (req, res) => res.sendStatus(204));
 // function process. API routes return a useful 503 until MongoDB is available.
 app.use(async (req, res, next) => {
   try {
-    await dbReady;
-    if (dbError) throw dbError;
+    // Connect per invocation when needed. A failed initial connection must
+    // not poison a warm Vercel function forever; later requests can retry.
+    await connectDB();
     next();
   } catch (err) {
     res.status(503).json({ message: "Database is not configured or unavailable" });
