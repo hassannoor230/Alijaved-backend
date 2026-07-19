@@ -19,11 +19,13 @@ const getTransporter = () => {
     secure: Number(process.env.SMTP_PORT) === 465, // true for port 465, false for 587/others
     auth: {
       user: process.env.SMTP_USER,
-      pass: process.env.SMTP_PASS,
+      // Gmail displays App Passwords in groups of four characters. Ignore
+      // those display spaces so either form works in a Vercel env variable.
+      pass: process.env.SMTP_PASS.replace(/\s/g, ""),
     },
-    connectionTimeout: 15000,
-    greetingTimeout: 15000,
-    socketTimeout: 30000,
+    connectionTimeout: 7000,
+    greetingTimeout: 7000,
+    socketTimeout: 7000,
   });
 
   return transporter;

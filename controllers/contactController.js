@@ -9,12 +9,11 @@ export const createContact = async (req, res) => {
     }
 
     const contact = await Contact.create(req.body);
-
-    // Fire off both emails. We don't want a slow/broken SMTP config to block
-    // the API response, so failures are logged but never crash the request.
     const adminEmail = process.env.ADMIN_EMAIL;
 
-    Promise.allSettled([
+    // A serverless function can finish as soon as its HTTP response is sent.
+    // Await delivery so Vercel does not terminate email sending early.
+    const emailResults = await Promise.allSettled([
       adminEmail
         ? sendEmail({
             to: adminEmail,
@@ -28,7 +27,7 @@ export const createContact = async (req, res) => {
               <p>${message}</p>
             `,
           })
-        : Promise.resolve(),
+        : Promise.reject(new Error("ADMIN_EMAIL is not configured")),
       sendEmail({
         to: email,
         subject: "Thanks for reaching out!",
@@ -40,15 +39,28 @@ export const createContact = async (req, res) => {
           <p>Talk soon,<br/>Ali</p>
         `,
       }),
-    ]).then((results) => {
-      results.forEach((r) => {
-        if (r.status === "rejected") console.error("Email send failed:", r.reason?.message);
-      });
-    });
+    ]);
 
-    res.status(201).json({ message: "Thanks — I'll get back to you within 24 hours.", contact });
+    const emailErrors = emailResults
+      .filter((result) => result.status === "rejected")
+      .map((result) => result.reason?.message || "Unknown email error");
+
+    if (emailErrors.length) {
+      console.error("Email send failed:", emailErrors.join(" | "));
+      return res.status(201).json({
+        message: "Your message was saved, but email delivery needs attention.",
+        contact,
+        emailSent: false,
+      });
+    }
+
+    return res.status(201).json({
+      message: "Thanks — I'll get back to you within 24 hours.",
+      contact,
+      emailSent: true,
+    });
   } catch (err) {
-    res.status(400).json({ message: "Failed to send message", error: err.message });
+    return res.status(400).json({ message: "Failed to send message", error: err.message });
   }
 };
 
