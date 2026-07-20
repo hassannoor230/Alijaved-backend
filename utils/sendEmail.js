@@ -39,13 +39,24 @@ export const sendEmail = async ({ to, subject, html, text }) => {
   const t = getTransporter();
   const from = process.env.SMTP_FROM || process.env.SMTP_USER;
 
-  return t.sendMail({
-    from: `"Ali.Ecom Portfolio" <${from}>`,
-    to,
-    subject,
-    html,
-    text,
-  });
+  try {
+    const info = await t.sendMail({
+      from: `"Ali.Ecom Portfolio" <${from}>`,
+      to,
+      subject,
+      html,
+      text,
+    });
+    return info;
+  } catch (err) {
+    console.error("sendEmail error", {
+      to,
+      subject,
+      message: err && err.message ? err.message : String(err),
+      stack: err && err.stack ? err.stack : undefined,
+    });
+    throw err;
+  }
 };
 
 export default sendEmail;
