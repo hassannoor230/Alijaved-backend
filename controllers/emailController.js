@@ -1,5 +1,6 @@
 import PendingEmail from "../models/PendingEmail.js";
 import sendEmail from "../utils/sendEmail.js";
+import { verifyTransporter } from "../utils/sendEmail.js";
 
 export const listPendingEmails = async (req, res) => {
   try {
@@ -29,5 +30,14 @@ export const resendPendingEmail = async (req, res) => {
     }
   } catch (err) {
     res.status(500).json({ message: "Failed to resend pending email", error: err.message });
+  }
+};
+
+export const verifySmtp = async (req, res) => {
+  try {
+    const ok = await verifyTransporter();
+    res.json({ ok: true, info: ok });
+  } catch (err) {
+    res.status(500).json({ ok: false, error: err.message || String(err) });
   }
 };

@@ -60,3 +60,9 @@ export const sendEmail = async ({ to, subject, html, text }) => {
 };
 
 export default sendEmail;
+
+// Verify transporter connectivity/authentication.
+export const verifyTransporter = async () => {
+  const t = getTransporter();
+  return t.verify();
+};
