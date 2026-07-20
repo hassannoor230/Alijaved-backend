@@ -40,7 +40,7 @@ export const sendEmail = async ({ to, subject, html, text }) => {
   const from = process.env.SMTP_FROM || process.env.SMTP_USER;
 
   return t.sendMail({
-    from: `"Ali.Ads Portfolio" <${from}>`,
+    from: `"Ali.Ecom Portfolio" <${from}>`,
     to,
     subject,
     html,
