@@ -8,6 +8,7 @@ import testimonialRoutes from "./routes/testimonials.js";
 import statRoutes from "./routes/stats.js";
 import contactRoutes from "./routes/contact.js";
 import analyticsRoutes from "./routes/analytics.js";
+import emailAdminRoutes from "./routes/emails.js";
 
 dotenv.config();
 
@@ -68,6 +69,7 @@ app.use("/api/testimonials", testimonialRoutes);
 app.use("/api/stats", statRoutes);
 app.use("/api/contact", contactRoutes);
 app.use("/api/analytics", analyticsRoutes);
+app.use("/api/admin/emails", emailAdminRoutes);
 
 // fallback error handler
 app.use((err, req, res, next) => {

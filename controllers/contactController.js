@@ -1,5 +1,6 @@
 import Contact from "../models/Contact.js";
 import sendEmail from "../utils/sendEmail.js";
+import PendingEmail from "../models/PendingEmail.js";
 
 export const createContact = async (req, res) => {
   try {
@@ -41,12 +42,50 @@ export const createContact = async (req, res) => {
       }),
     ]);
 
-    const emailErrors = emailResults
-      .filter((result) => result.status === "rejected")
-      .map((result) => result.reason?.message || "Unknown email error");
+    const rejected = emailResults.filter((r) => r.status === "rejected");
 
-    if (emailErrors.length) {
+    if (rejected.length) {
+      const emailErrors = rejected.map((r) => r.reason?.message || "Unknown email error");
       console.error("Email send failed:", emailErrors.join(" | "));
+
+      // Persist failed emails so an admin can retry sending later.
+      for (const idx in emailResults) {
+        const r = emailResults[idx];
+        // If this send failed, and we have the original payload, persist it.
+        if (r.status === "rejected") {
+          const payload = idx === "0" && process.env.ADMIN_EMAIL
+            ? {
+                to: process.env.ADMIN_EMAIL,
+                subject: `New portfolio lead: ${name}`,
+                html: `
+                  <h2>New contact form submission</h2>
+                  <p><b>Name:</b> ${name}</p>
+                  <p><b>Email:</b> ${email}</p>
+                  ${req.body.budget ? `<p><b>Budget:</b> ${req.body.budget}</p>` : ""}
+                  <p><b>Message:</b></p>
+                  <p>${message}</p>
+                `,
+              }
+            : {
+                to: email,
+                subject: "Thanks for reaching out!",
+                html: `
+                  <p>Hi ${name},</p>
+                  <p>Thanks for getting in touch — I've received your message and will get back to you within 24 hours.</p>
+                  <p>Here's a copy of what you sent:</p>
+                  <blockquote style="border-left:3px solid #e6141f;padding-left:12px;color:#555;">${message}</blockquote>
+                  <p>Talk soon,<br/>Ali</p>
+                `,
+              };
+
+          try {
+            await PendingEmail.create({ ...payload, lastError: r.reason?.message });
+          } catch (saveErr) {
+            console.error("Failed to persist pending email:", saveErr.message || saveErr);
+          }
+        }
+      }
+
       return res.status(201).json({
         message: "Your message was saved, but email delivery needs attention.",
         contact,
