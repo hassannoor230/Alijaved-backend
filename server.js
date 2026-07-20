@@ -13,10 +13,16 @@ dotenv.config();
 
 const app = express();
 
+// Allow the live frontend out of the box. CLIENT_ORIGIN can add custom domains
+// or preview domains as a comma-separated list.
+const defaultOrigins = [
+  "http://localhost:5173",
+  "https://alijaved-frontend.vercel.app",
+];
+
 // Accept full URLs in CLIENT_ORIGIN. The normalization also prevents a common
 // Vercel configuration mistake: entering `my-site.vercel.app` without `https://`.
-const allowedOrigins = (process.env.CLIENT_ORIGIN || "http://localhost:5173")
-  .split(",")
+const allowedOrigins = [...defaultOrigins, ...(process.env.CLIENT_ORIGIN || "").split(",")]
   .map((origin) => origin.trim().replace(/\/$/, ""))
   .filter(Boolean)
   .map((origin) => {
